@@ -146,4 +146,5 @@ git push origin hexo
 
 ## 四、注意事项
 
-好像不能设置为私有仓库，否则博客网站会404（流汗黄豆）
+- 好像不能设置为私有仓库，否则博客网站会404（流汗黄豆）
+- latex风格支持：https://www.cnblogs.com/searchstar/p/18437856
