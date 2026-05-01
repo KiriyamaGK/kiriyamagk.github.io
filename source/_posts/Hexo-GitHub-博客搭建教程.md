@@ -143,3 +143,7 @@ git add .
 git commit -m "添加新文章"
 git push origin hexo
 ```
+
+## 四、注意事项
+
+好像不能设置为私有仓库，否则博客网站会404（流汗黄豆）
