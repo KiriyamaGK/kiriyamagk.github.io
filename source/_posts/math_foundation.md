@@ -87,9 +87,10 @@ $$ -->
 - 7. $x^\star = A^+ b$ 为 $Ax = b$ 的模长最小的最小二乘解，且 $x^\star \in R(A^T)$
 
 - 8. $\forall x \in \mathbb{R}^n$ 可唯一分解为
-  $$
-  x = \underbrace{A^+ A x}_{\in R(A^T)，由性质6} + \underbrace{(I - A^+ A)x}_{\in N(A)，左乘A可证}
-  $$
+  
+$$
+x = \underbrace{A^+ A x}_{\in R(A^T)，由性质6} + \underbrace{(I - A^+ A)x}_{\in N(A)，左乘A可证}
+$$
 
 ### 性质证明
 #### 6证明（只证 $A^+A$ 是到 $R(A^T)$ 的正交投影）：
