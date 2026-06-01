@@ -1,0 +1,56 @@
+---
+title: 冗余机械臂零空间运动
+date: 2026-05-30
+tags: [null space]
+categories: robotics
+mathjax: true 
+---
+
+## 问题定义
+
+设：
+- $q \in \mathbb{R}^7$ 为关节角
+- $x = f(q) \in \mathbb{R}^6$ 为末端位姿（位置+姿态）
+- $x_d$ 为期望的末端位姿（常数）
+- $J(q) = \frac{\partial f}{\partial q} \in \mathbb{R}^{6 \times 7}$ 为雅可比矩阵
+
+**控制目标是**：$\lim_{t \to \infty} x(t) = x_d$，同时允许关节在零空间内运动。
+
+## 控制律
+
+$$\dot{q} = \underbrace{N(q) \dot{q}_{\text{null}}}_{\text{零空间运动}} + \underbrace{J^+(q) K (x_d - x)}_{\text{位置跟踪补偿项}}$$
+
+其中 $N = I - J^+J$ 是零空间投影矩阵，$K \in \mathbb{R}^{6 \times 6}$ 为正定增益矩阵，$\forall \dot{q}_{\text{null}} \in \mathbb{R} ^7$。
+
+## 收敛性证明
+
+**第一步：推导末端误差动力学**
+
+令 $e = x_d - x$。则：
+$$\dot{e} = -\dot{x} = -J(q)\dot{q}$$
+
+代入控制律：
+$$\dot{e} = -J\left(N\dot{q}_{\text{null}} + J^+ K e\right)$$
+
+**第二步：简化上式**
+
+对于第一项，由于 $ N \in N(J)$ ，故 $J N = J - J = 0$（trivial）。
+
+对于第二项，不妨设 $J$ 行满秩，故有 $J J^+ = I_{6 \times 6}$
+
+
+两者相加：
+$$\dot{e} = -J J^+ K e = -K e$$
+
+**第三步：求解误差微分方程**
+
+$$\dot{e} = -K e$$
+
+这是一个线性齐次微分方程，解为：
+$$e(t) = e^{-K t} e(0)$$
+
+
+由于 $K$ 正定，$e^{-K t} \to 0$ 当 $t \to \infty$，因此：
+$$\lim_{t \to \infty} e(t) = 0$$
+
+收敛速度为指数级，时间常数由 $K$ 的最小特征值决定。
