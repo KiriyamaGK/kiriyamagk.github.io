@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Panthera-HT SDK 架构文档 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Panthera-HT SDK 架构文档 本文档描述 Panthera-HT SDK 的整体架构、类继承与构造顺序、各层职责及主要 API，便于理解从硬件通信到机械臂高层控制的完整调用链。  1. 仓库总览 12345678Panthera-HT_SDK&#x2F;├── panthera_cpp&#x2F;                 # C++ SDK（核心）│   ├── motor_cpp&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Panthera-HT SDK 架构文档">
+<meta property="og:url" content="http://example.com/2026/05/01/PantheraHT_doc/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Panthera-HT SDK 架构文档 本文档描述 Panthera-HT SDK 的整体架构、类继承与构造顺序、各层职责及主要 API，便于理解从硬件通信到机械臂高层控制的完整调用链。  1. 仓库总览 12345678Panthera-HT_SDK&#x2F;├── panthera_cpp&#x2F;                 # C++ SDK（核心）│   ├── motor_cpp&#x2F;">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-04-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-30T03:53:26.067Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="文档">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-PantheraHT_doc" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/05/01/PantheraHT_doc/" class="article-date">
+  <time class="dt-published" datetime="2026-04-30T16:00:00.000Z" itemprop="datePublished">2026-05-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%96%87%E6%A1%A3/">文档</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Panthera-HT SDK 架构文档
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="panthera-ht-sdk-架构文档">Panthera-HT SDK 架构文档</h1>
+<p>本文档描述 Panthera-HT SDK
+的整体架构、类继承与构造顺序、各层职责及主要
+API，便于理解从硬件通信到机械臂高层控制的完整调用链。</p>
+<hr />
+<h2 id="1-仓库总览">1. 仓库总览</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Panthera-HT_SDK/</span><br><span class="line">├── panthera_cpp/                 # C++ SDK（核心）</span><br><span class="line">│   ├── motor_cpp/                # 底层：电机 / CAN / 串口通信</span><br><span class="line">│   └── robot_cpp/                # 上层：机械臂控制、运动学、动力学</span><br><span class="line">├── panthera_python/              # Python SDK（pybind11 绑定 C++）</span><br><span class="line">├── docs/</span><br><span class="line">│   └── ARCHITECTURE.md           # 本文档</span><br><span class="line">└── README.md</span><br></pre></td></tr></table></figure>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 23%" />
+<col style="width: 30%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>模块</th>
+<th>库名</th>
+<th>核心类</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>motor_cpp</code></td>
+<td><code>hightorque_motor</code></td>
+<td><code>hightorque_robot::robot</code></td>
+<td>USB 串口 → CAN 板 → 电机，底层通信与电机对象管理</td>
+</tr>
+<tr class="even">
+<td><code>robot_cpp</code></td>
+<td><code>panthera_robot</code></td>
+<td><code>panthera::Panthera</code></td>
+<td>在 <code>robot</code> 之上增加关节限位、轨迹插值、FK/IK、动力学</td>
+</tr>
+<tr class="odd">
+<td><code>panthera_python</code></td>
+<td><code>panthera</code> (pip)</td>
+<td><code>Panthera</code> (Python)</td>
+<td>与 C++ <code>Panthera</code> 等价的 Python 接口</td>
+</tr>
+</tbody>
+</table>
+<p><strong>依赖关系：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">panthera_python  →  panthera_robot  →  hightorque_motor</span><br><span class="line">                         ↓</span><br><span class="line">                    Pinocchio (URDF / 动力学)</span><br><span class="line">                    yaml-cpp (配置)</span><br></pre></td></tr></table></figure>
+<p><code>robot_cpp/CMakeLists.txt</code> 通过
+<code>add_subdirectory(../motor_cpp)</code> 将 <code>motor_cpp</code>
+作为子工程编译，并链接 <code>hightorque_motor</code> 库。</p>
+<hr />
+<h2 id="2-分层架构">2. 分层架构</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">应用层 (example / 用户代码)</span><br><span class="line">├── 1_PosVel_control.cpp</span><br><span class="line">├── 3_interpolation_control_nozeroVel.cpp</span><br><span class="line">├── 5_teleop_control.cpp</span><br><span class="line">└── ...</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">机械臂层 (panthera::Panthera)</span><br><span class="line">├── initialize() / initializeMembers()</span><br><span class="line">├── posVelMaxTorque / posVelTorqueKpKd</span><br><span class="line">├── quinticInterpolation / septicInterpolationWithVelocity</span><br><span class="line">├── forwardKinematics / inverseKinematics</span><br><span class="line">├── getGravity / getDynamics / getFrictionCompensation</span><br><span class="line">└── checkJointLimits / loadConfig / loadURDFModel</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">底层机器人层 (hightorque_robot::robot)</span><br><span class="line">├── init_robot()</span><br><span class="line">├── motor_send_cmd()</span><br><span class="line">├── send_get_motor_state_cmd()</span><br><span class="line">└── Motors[] 电机对象向量</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">硬件抽象层</span><br><span class="line">├── serial_driver    串口驱动</span><br><span class="line">├── canboard         CAN 转发板</span><br><span class="line">├── canport          CAN 端口</span><br><span class="line">└── motor            单电机控制</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">物理设备</span><br><span class="line">├── USB 虚拟串口  /dev/ttyACM*</span><br><span class="line">├── CAN 转发板</span><br><span class="line">└── 关节电机 + 夹爪电机</span><br></pre></td></tr></table></figure>
+<p><strong>数据流（一次控制指令）：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">用户代码</span><br><span class="line">  → Panthera::posVelMaxTorque(pos, vel, max_torque)</span><br><span class="line">    → checkJointLimits(pos)          // 仅检查位置</span><br><span class="line">    → Motors[i]-&gt;pos_vel_MAXtqe(...) // 写入各电机命令缓存</span><br><span class="line">    → robot::motor_send_cmd()        // 经串口/CAN 下发</span><br><span class="line">      → serial_driver → canboard → canport → motor → 物理电机</span><br></pre></td></tr></table></figure>
+<hr />
+<h2 id="3-类继承与构造顺序">3. 类继承与构造顺序</h2>
+<h3 id="31-继承关系">3.1 继承关系</h3>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// panthera_cpp/robot_cpp/include/panthera/Panthera.hpp</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Panthera</span> : <span class="keyword">public</span> hightorque_robot::robot</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>hightorque_robot::robot</code> 定义于
+<code>panthera_cpp/motor_cpp/include/hardware/robot.hpp</code></li>
+<li><code>Panthera</code> 通过
+<code>#include "hardware/robot.hpp"</code> 引入父类</li>
+<li>父类 <strong>public</strong> 成员
+<code>Motors</code>、<code>motor_send_cmd()</code>
+等，子类可直接使用</li>
+<li>父类 <strong>private</strong> 成员
+<code>init_robot()</code>，子类<strong>不能</strong>直接调用，只能由父类构造函数间接触发</li>
+</ul>
+<h3 id="32-构造调用链">3.2 构造调用链</h3>
+<p>以 <code>Panthera robot("../robot_param/Follower.yaml")</code>
+为例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Panthera(config_path)</span><br><span class="line">│</span><br><span class="line">├─ ① 父类构造（初始化列表）</span><br><span class="line">│     hightorque_robot::robot(config_path)</span><br><span class="line">│       └─ robot::robot(config_path)</span><br><span class="line">│            └─ init_robot(config_path)     ← 硬件初始化（private，仅此入口）</span><br><span class="line">│                 ├─ parseRobotParams()      读 motor_param/*.yaml</span><br><span class="line">│                 ├─ init_ser()              打开串口</span><br><span class="line">│                 ├─ 创建 CANboards / CANPorts</span><br><span class="line">│                 ├─ 创建 Motors[]           电机对象</span><br><span class="line">│                 ├─ check_motor_connection_*()</span><br><span class="line">│                 └─ send_get_motor_state_cmd()</span><br><span class="line">│</span><br><span class="line">├─ ② 子类成员初始化（初始化列表）</span><br><span class="line">│     motor_count_=0, gripper_id_=0, model_loaded_=false, ...</span><br><span class="line">│</span><br><span class="line">└─ ③ 子类构造函数体</span><br><span class="line">      initialize(config_path)                  ← Panthera 层初始化</span><br><span class="line">        ├─ loadConfig(config_path)           关节限位、力矩、速度限幅、URDF 路径</span><br><span class="line">        ├─ motor_count_ = Motors.size() - 1  使用父类已建好的 Motors</span><br><span class="line">        ├─ gripper_id_ = Motors.size()</span><br><span class="line">        └─ loadURDFModel()                   Pinocchio 加载 URDF</span><br></pre></td></tr></table></figure>
+<p>无参构造 <code>Panthera()</code> 的区别：</p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 35%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>步骤</th>
+<th>无参构造</th>
+<th>带路径构造</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>父类配置</td>
+<td><code>robot("../robot_param/Follower.yaml")</code></td>
+<td><code>robot(config_path)</code></td>
+</tr>
+<tr class="even">
+<td>子类初始化</td>
+<td><code>initializeMembers()</code></td>
+<td><code>initialize(config_path)</code></td>
+</tr>
+</tbody>
+</table>
+<p>两者逻辑等价，均会：父类 <code>init_robot</code> → 子类
+<code>loadConfig</code> + <code>loadURDFModel</code>。</p>
+<h3 id="33-两层初始化职责">3.3 两层初始化职责</h3>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 18%" />
+<col style="width: 31%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>层级</th>
+<th>入口</th>
+<th>配置文件</th>
+<th>主要工作</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>父类 <code>robot</code></td>
+<td><code>init_robot()</code></td>
+<td><code>Follower.yaml</code> → <code>param_file</code> →
+<code>motor_param/*.yaml</code></td>
+<td>串口、CAN 板、电机枚举、通信线程、电机连接检测</td>
+</tr>
+<tr class="even">
+<td>子类 <code>Panthera</code></td>
+<td><code>initialize()</code> / <code>initializeMembers()</code></td>
+<td>同一份 <code>Follower.yaml</code>（再次
+<code>loadConfig</code>）</td>
+<td>关节/夹爪限位、最大力矩、速度限幅、URDF、Pinocchio 模型</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>注意：</strong> 同一份 YAML 被读取两次——父类读
+<code>robot.param_file</code> 指向的电机参数，子类读
+<code>joint_limits</code>、<code>urdf</code>
+等机械臂参数。<code>Follower.yaml</code> 通过 <code>param_file</code>
+字段桥接到底层电机配置。</p>
+</blockquote>
+<h3 id="34-析构顺序">3.4 析构顺序</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">~Panthera()</span><br><span class="line">  → ~robot()</span><br><span class="line">       ├─ set_brake() / set_stop() / set_reset()   // 根据配置决定</span><br><span class="line">       ├─ 关闭串口、join 接收线程</span><br><span class="line">       └─ 释放 CAN / 电机资源</span><br></pre></td></tr></table></figure>
+<hr />
+<h2 id="4-配置文件体系">4. 配置文件体系</h2>
+<h3 id="41-两层-yaml">4.1 两层 YAML</h3>
+<p><strong>机械臂配置</strong>（<code>robot_cpp/robot_param/Follower.yaml</code>
+或 <code>Leader.yaml</code>）：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">robot:</span></span><br><span class="line">  <span class="attr">robot_name:</span> <span class="string">&quot;Panthera-HT&quot;</span></span><br><span class="line">  <span class="attr">param_file:</span> <span class="string">&quot;motor_param/6dof_Panthera_params_follower.yaml&quot;</span>  <span class="comment"># → 指向底层参数</span></span><br><span class="line">  <span class="attr">joint_limits:</span> &#123; <span class="attr">lower:</span> [<span class="string">...</span>], <span class="attr">upper:</span> [<span class="string">...</span>] &#125;</span><br><span class="line">  <span class="attr">gripper_limits:</span> &#123; <span class="attr">lower:</span> <span class="number">0.0</span>, <span class="attr">upper:</span> <span class="number">2.0</span> &#125;</span><br><span class="line">  <span class="attr">max_torque:</span> [<span class="string">...</span>]        <span class="comment"># 可选</span></span><br><span class="line">  <span class="attr">velocity_limits:</span> [<span class="string">...</span>]   <span class="comment"># 可选，缺省则 Panthera 使用 ±1.0 rad/s</span></span><br><span class="line"></span><br><span class="line"><span class="attr">urdf:</span></span><br><span class="line">  <span class="attr">file_path:</span> <span class="string">&quot;../Panthera-HT_description/urdf/...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">kinematics:</span></span><br><span class="line">  <span class="attr">joint_names:</span> [<span class="string">&quot;joint1&quot;</span>, <span class="string">...</span>, <span class="string">&quot;joint6&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="attr">control:</span></span><br><span class="line">  <span class="attr">default_velocity:</span> <span class="number">0.5</span></span><br><span class="line">  <span class="attr">default_max_torque:</span> <span class="number">10.0</span></span><br></pre></td></tr></table></figure>
+<p><strong>电机底层配置</strong>（<code>robot_cpp/robot_param/motor_param/6dof_Panthera_params_*.yaml</code>）：</p>
+<ul>
+<li>CAN 板数量、串口类型、波特率</li>
+<li>各 CAN 口挂载的电机 ID、型号、名称</li>
+<li>电机超时、刹车策略等</li>
+</ul>
+<h3 id="42-主臂--从臂">4.2 主臂 / 从臂</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>文件</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Leader.yaml</code> +
+<code>6dof_Panthera_params_leader.yaml</code></td>
+<td>主臂（遥操作主动端）</td>
+</tr>
+<tr class="even">
+<td><code>Follower.yaml</code> +
+<code>6dof_Panthera_params_follower.yaml</code></td>
+<td>从臂（遥操作被动端 / 默认配置）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-硬件层类与方法-motor_cpp">5. 硬件层类与方法
+(<code>motor_cpp</code>)</h2>
+<h3 id="51-类层次">5.1 类层次</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">robot</span><br><span class="line"> ├── serial_driver[]     串口驱动</span><br><span class="line"> ├── canboard[]          CAN 转发板（每块板管理若干 CAN 口）</span><br><span class="line"> │    └── canport[]      CAN 端口</span><br><span class="line"> │         └── motor[]   单个关节/夹爪电机</span><br><span class="line"> └── Motors[]            所有电机的扁平列表（public）</span><br></pre></td></tr></table></figure>
+<h3 id="52-hightorque_robotrobot-主要方法">5.2
+<code>hightorque_robot::robot</code> 主要方法</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>分类</th>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>生命周期</td>
+<td><code>robot()</code>, <code>robot(config_path)</code>,
+<code>~robot()</code></td>
+<td>构造时调用 <code>init_robot</code></td>
+</tr>
+<tr class="even">
+<td>通信</td>
+<td><code>motor_send_cmd()</code></td>
+<td>将各电机缓存命令打包下发</td>
+</tr>
+<tr class="odd">
+<td>状态</td>
+<td><code>send_get_motor_state_cmd()</code></td>
+<td>请求电机反馈</td>
+</tr>
+<tr class="even">
+<td>状态</td>
+<td><code>send_get_motor_version_cmd()</code></td>
+<td>请求固件版本</td>
+</tr>
+<tr class="odd">
+<td>安全</td>
+<td><code>set_stop()</code>, <code>set_brake()</code>,
+<code>set_reset()</code></td>
+<td>急停 / 刹车 / 复位</td>
+</tr>
+<tr class="even">
+<td>零位</td>
+<td><code>set_reset_zero()</code>, <code>set_motor_runzero()</code></td>
+<td>回零相关</td>
+</tr>
+<tr class="odd">
+<td>超时</td>
+<td><code>set_timeout(t_ms)</code></td>
+<td>通信超时</td>
+</tr>
+<tr class="even">
+<td>诊断</td>
+<td><code>check_motor_connection_position()</code></td>
+<td>检测电机连接</td>
+</tr>
+<tr class="odd">
+<td>LCM</td>
+<td><code>lcm_enable()</code>, <code>publishJointStates()</code></td>
+<td>可选状态发布</td>
+</tr>
+<tr class="even">
+<td>固件</td>
+<td><code>canboard_bootloader()</code></td>
+<td>CAN 板升级</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-motor-主要控制方法">5.3 <code>motor</code> 主要控制方法</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>position(float)</code></td>
+<td>纯位置控制</td>
+</tr>
+<tr class="even">
+<td><code>velocity(float)</code></td>
+<td>纯速度控制</td>
+</tr>
+<tr class="odd">
+<td><code>torque(float)</code></td>
+<td>纯力矩控制</td>
+</tr>
+<tr class="even">
+<td><code>pos_vel_MAXtqe(pos, vel, torque_max)</code></td>
+<td>位置 + 速度 + 最大力矩（最常用底层模式）</td>
+</tr>
+<tr class="odd">
+<td><code>pos_vel_tqe_kp_kd(pos, vel, tqe, Kp, Kd)</code></td>
+<td>MIT 五参数模式</td>
+</tr>
+<tr class="even">
+<td><code>pos_vel_kp_kd(pos, vel, Kp, Kd)</code></td>
+<td>位置速度 PD</td>
+</tr>
+<tr class="odd">
+<td><code>get_current_motor_state()</code></td>
+<td>返回 <code>motor_back_t*</code>（位置、速度、力矩）</td>
+</tr>
+<tr class="even">
+<td><code>stop()</code>, <code>brake()</code>, <code>reset()</code></td>
+<td>单电机急停</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-机械臂层类与方法-pantherapanthera">6. 机械臂层类与方法
+(<code>panthera::Panthera</code>)</h2>
+<p>头文件：<code>panthera_cpp/robot_cpp/include/panthera/Panthera.hpp</code><br />
+实现：<code>panthera_cpp/robot_cpp/src/panthera/Panthera.cpp</code></p>
+<h3 id="61-状态获取">6.1 状态获取</h3>
+<table>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>返回</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>getCurrentState()</code></td>
+<td><code>vector&lt;motor_back_t*&gt;</code></td>
+<td>各关节原始状态</td>
+</tr>
+<tr class="even">
+<td><code>getCurrentPos()</code></td>
+<td><code>vector&lt;double&gt;</code></td>
+<td>关节位置 (rad)</td>
+</tr>
+<tr class="odd">
+<td><code>getCurrentVel()</code></td>
+<td><code>vector&lt;double&gt;</code></td>
+<td>关节速度 (rad/s)</td>
+</tr>
+<tr class="even">
+<td><code>getCurrentTorque()</code></td>
+<td><code>vector&lt;double&gt;</code></td>
+<td>关节力矩 (Nm)</td>
+</tr>
+<tr class="odd">
+<td><code>getCurrentPosGripper()</code> 等</td>
+<td>标量 / 指针</td>
+<td>夹爪状态</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-控制接口">6.2 控制接口</h3>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 31%" />
+<col style="width: 31%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>位置限位</th>
+<th>速度限幅</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>posVelMaxTorque(pos, vel, max_torque, is_wait, ...)</code></td>
+<td>✅ 检查</td>
+<td>❌ 不限幅</td>
+<td>最常用，轨迹示例均用此接口</td>
+</tr>
+<tr class="even">
+<td><code>posVelTorqueKpKd(pos, vel, torque, kp, kd)</code></td>
+<td>✅</td>
+<td>❌</td>
+<td>MIT 阻抗 / 力控</td>
+</tr>
+<tr class="odd">
+<td><code>jointVel(vel)</code></td>
+<td>❌</td>
+<td>✅ 限幅</td>
+<td>纯速度控制</td>
+</tr>
+<tr class="even">
+<td><code>jointsSyncArrival(pos, duration, ...)</code></td>
+<td>✅</td>
+<td>隐式（由 duration 算平均速度）</td>
+<td>多关节同步到达</td>
+</tr>
+<tr class="odd">
+<td><code>gripperControl</code> / <code>gripperControlMIT</code></td>
+<td>夹爪限位</td>
+<td>—</td>
+<td>夹爪控制</td>
+</tr>
+<tr class="even">
+<td><code>gripperOpen()</code> / <code>gripperClose()</code></td>
+<td>—</td>
+<td>—</td>
+<td>夹爪开合快捷接口</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>安全提示：</strong> <code>posVelMaxTorque</code>
+不限制速度。若轨迹插值产生超速，需在上层自行检查
+<code>traj_vel</code>，或调用前限幅。<code>jointVel</code> 才会使用
+<code>velocity_limits_</code>（配置缺省为 ±1.0 rad/s）。</p>
+</blockquote>
+<h3 id="63-轨迹规划静态方法">6.3 轨迹规划（静态方法）</h3>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 38%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>边界条件</th>
+<th>典型用途</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>quinticInterpolation</code></td>
+<td>起终点速度、加速度为 0</td>
+<td>点到点平滑运动</td>
+</tr>
+<tr class="even">
+<td><code>septicInterpolation</code></td>
+<td>起终点速度、加速度、加加速度为 0</td>
+<td>更平滑的点到点</td>
+</tr>
+<tr class="odd">
+<td><code>septicInterpolationWithVelocity</code></td>
+<td>可指定起终点速度</td>
+<td>连续轨迹、中间点不停顿</td>
+</tr>
+</tbody>
+</table>
+<p>示例 <code>3_interpolation_control_nozeroVel.cpp</code> 使用
+<code>septicInterpolationWithVelocity</code>，以 50 Hz 循环插值并调用
+<code>posVelMaxTorque</code>。</p>
+<h3 id="64-运动学与动力学">6.4 运动学与动力学</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>forwardKinematics(joint_angles)</code></td>
+<td>正运动学，返回位置、旋转、变换矩阵</td>
+</tr>
+<tr class="even">
+<td><code>inverseKinematics(target_position, ...)</code></td>
+<td>数值逆运动学（需 URDF 已加载）</td>
+</tr>
+<tr class="odd">
+<td><code>getGravity(q)</code></td>
+<td>重力补偿力矩 G(q)</td>
+</tr>
+<tr class="even">
+<td><code>getCoriolis(q, v)</code> /
+<code>getCoriolisVector(q, v)</code></td>
+<td>科氏力</td>
+</tr>
+<tr class="odd">
+<td><code>getMassMatrix(q)</code></td>
+<td>质量矩阵 M(q)</td>
+</tr>
+<tr class="even">
+<td><code>getInertiaTerms(q, a)</code></td>
+<td>M(q)·a</td>
+</tr>
+<tr class="odd">
+<td><code>getDynamics(q, v, a)</code></td>
+<td>τ = M·a + C·v + G</td>
+</tr>
+<tr class="even">
+<td><code>getFrictionCompensation(vel, Fc, Fv)</code></td>
+<td>库伦 + 粘性摩擦补偿</td>
+</tr>
+<tr class="odd">
+<td><code>clipTorque(torque, max_torque)</code></td>
+<td>力矩限幅工具</td>
+</tr>
+</tbody>
+</table>
+<p>依赖 <strong>Pinocchio</strong> 解析
+<code>Panthera-HT_description/urdf/*.urdf</code>。</p>
+<h3 id="65-私有初始化方法">6.5 私有初始化方法</h3>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 45%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>调用时机</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>initialize(config_path)</code></td>
+<td>带参构造</td>
+<td>子类完整初始化</td>
+</tr>
+<tr class="even">
+<td><code>initializeMembers()</code></td>
+<td>无参构造</td>
+<td>同上，使用默认 Follower.yaml</td>
+</tr>
+<tr class="odd">
+<td><code>loadConfig(config_path)</code></td>
+<td>上述两者内部</td>
+<td>读关节限位、力矩、速度限幅</td>
+</tr>
+<tr class="even">
+<td><code>loadURDFModel()</code></td>
+<td>上述两者内部</td>
+<td>Pinocchio 加载 URDF</td>
+</tr>
+<tr class="odd">
+<td><code>checkJointLimits(pos)</code></td>
+<td>控制前</td>
+<td>位置安全检查</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-示例程序索引">7. 示例程序索引</h2>
+<p>路径：<code>panthera_cpp/robot_cpp/example/</code></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>编号</th>
+<th>文件</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td><code>0_robot_get_state.cpp</code></td>
+<td>读取并打印关节状态</td>
+</tr>
+<tr class="even">
+<td>0</td>
+<td><code>0_robot_set_zero.cpp</code></td>
+<td>设置电机零位</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td><code>1_PosVel_control.cpp</code></td>
+<td>基础位置速度控制</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td><code>1_PD_control.cpp</code></td>
+<td>PD 控制</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td><code>1_Joints_Sync_Arrival_control.cpp</code></td>
+<td>多关节同步到达</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>2_inv_PosVel_control.cpp</code></td>
+<td>逆运动学位置控制</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td><code>2_gravity_compensation_control.cpp</code></td>
+<td>重力补偿</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>2_gravity_friction_compensation_control.cpp</code></td>
+<td>重力 + 摩擦补偿</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td><code>2_joint_impedance_control.cpp</code></td>
+<td>关节阻抗（重力 + PD）</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>2_joint_impedance_control_with_friction.cpp</code></td>
+<td>含摩擦的阻抗控制</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>3_interpolation_control_zeroVel.cpp</code></td>
+<td>七次插值，中间点零速</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td><code>3_interpolation_control_nozeroVel.cpp</code></td>
+<td>七次插值，中间点非零速（连续运动）</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>3_sin_trajectory_control.cpp</code></td>
+<td>正弦轨迹</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td><code>3_gravity_compensation_with_fk.cpp</code></td>
+<td>重力补偿 + 正运动学</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td><code>4_impedance_trajectory_control_with_gra_pd.cpp</code></td>
+<td>轨迹阻抗控制</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td><code>5_record_trajectory.cpp</code></td>
+<td>主从轨迹录制</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td><code>5_replay_trajectory.cpp</code></td>
+<td>轨迹回放</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td><code>5_teleop_control.cpp</code></td>
+<td>主从遥操作</td>
+</tr>
+</tbody>
+</table>
+<p><code>motor_cpp/example/</code>
+提供更底层的电机级示例（单电机运动、回零、CAN 板升级等）。</p>
+<hr />
+<h2 id="8-python-sdk-关系">8. Python SDK 关系</h2>
+<ul>
+<li>路径：<code>panthera_python/</code></li>
+<li>通过 <strong>pybind11</strong> 绑定 C++ <code>Panthera</code> 及底层
+<code>robot</code> 接口</li>
+<li>API 命名采用 snake_case（如 <code>pos_vel_MAXtqe</code>），与 C++
+camelCase（如 <code>posVelMaxTorque</code>）对应</li>
+<li>功能集与 C++ <code>robot_cpp</code>
+基本一致：控制、运动学、动力学、轨迹插值、主从遥操</li>
+</ul>
+<p>安装与示例见 <code>panthera_python/README.md</code>。</p>
+<hr />
+<h2 id="9-典型使用模式">9. 典型使用模式</h2>
+<h3 id="91-最简控制">9.1 最简控制</h3>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;panthera/Panthera.hpp&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">panthera::Panthera <span class="title">robot</span><span class="params">(<span class="string">&quot;../robot_param/Follower.yaml&quot;</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">std::vector&lt;<span class="type">double</span>&gt; <span class="title">pos</span><span class="params">(<span class="number">6</span>, <span class="number">0.0</span>)</span></span>;</span><br><span class="line"><span class="function">std::vector&lt;<span class="type">double</span>&gt; <span class="title">vel</span><span class="params">(<span class="number">6</span>, <span class="number">0.3</span>)</span></span>;</span><br><span class="line"><span class="function">std::vector&lt;<span class="type">double</span>&gt; <span class="title">max_torque</span><span class="params">(<span class="number">6</span>, <span class="number">5.0</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">robot.<span class="built_in">posVelMaxTorque</span>(pos, vel, max_torque, <span class="literal">true</span>);  <span class="comment">// is_wait=true 等待到位</span></span><br></pre></td></tr></table></figure>
+<h3 id="92-轨迹插值循环">9.2 轨迹插值循环</h3>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> step = <span class="number">0</span>; step &lt; steps; ++step) &#123;</span><br><span class="line">    <span class="type">double</span> t = step * dt;</span><br><span class="line">    std::vector&lt;<span class="type">double</span>&gt; traj_pos, traj_vel, traj_acc;</span><br><span class="line">    panthera::Panthera::<span class="built_in">septicInterpolationWithVelocity</span>(</span><br><span class="line">        start_pos, end_pos, start_vel, end_vel, duration, t,</span><br><span class="line">        traj_pos, traj_vel, traj_acc);</span><br><span class="line">    robot.<span class="built_in">posVelMaxTorque</span>(traj_pos, traj_vel, max_torque);</span><br><span class="line">    <span class="comment">// sleep_until 保持控制频率</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="93-继承父类能力">9.3 继承父类能力</h3>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">robot.<span class="built_in">motor_send_cmd</span>();              <span class="comment">// 直接调用父类方法</span></span><br><span class="line">robot.<span class="built_in">send_get_motor_state_cmd</span>();</span><br><span class="line">robot.<span class="built_in">set_stop</span>();</span><br><span class="line"><span class="type">size_t</span> n = robot.Motors.<span class="built_in">size</span>();      <span class="comment">// 直接访问父类 public 成员</span></span><br></pre></td></tr></table></figure>
+<hr />
+<h2 id="10-关键源文件速查">10. 关键源文件速查</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>文件</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>motor_cpp/include/hardware/robot.hpp</code></td>
+<td><code>hightorque_robot::robot</code> 类声明</td>
+</tr>
+<tr class="even">
+<td><code>motor_cpp/src/hardware/robot.cpp</code></td>
+<td><code>init_robot</code>、串口/CAN 初始化</td>
+</tr>
+<tr class="odd">
+<td><code>motor_cpp/include/hardware/motor.hpp</code></td>
+<td>单电机控制接口</td>
+</tr>
+<tr class="even">
+<td><code>robot_cpp/include/panthera/Panthera.hpp</code></td>
+<td><code>Panthera</code> 完整 API</td>
+</tr>
+<tr class="odd">
+<td><code>robot_cpp/src/panthera/Panthera.cpp</code></td>
+<td>构造链、控制、插值、动力学实现</td>
+</tr>
+<tr class="even">
+<td><code>robot_cpp/robot_param/Follower.yaml</code></td>
+<td>从臂机械臂配置</td>
+</tr>
+<tr class="odd">
+<td><code>robot_cpp/robot_param/motor_param/*.yaml</code></td>
+<td>电机/CAN 底层配置</td>
+</tr>
+<tr class="even">
+<td><code>robot_cpp/CMakeLists.txt</code></td>
+<td>构建与依赖关系</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-延伸阅读">11. 延伸阅读</h2>
+<ul>
+<li><a href="../README.md">根目录 README</a> — 项目介绍与相关仓库</li>
+<li><a href="../panthera_cpp/robot_cpp/README.md">C++ SDK README</a> —
+编译、示例、API 说明</li>
+<li><a href="../panthera_cpp/motor_cpp/README.md">motor_cpp README</a> —
+底层电机 SDK</li>
+<li><a href="../panthera_python/README.md">Python SDK README</a> —
+Python 安装与用法</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2026/05/01/PantheraHT_doc/" data-id="cuidb8VqB6FnepJUFgzNHZu-7" data-title="Panthera-HT SDK 架构文档" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%96%87%E6%A1%A3/" rel="tag">文档</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag">笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2026/05/01/Hexo-GitHub-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E6%95%99%E7%A8%8B/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Hexo-GitHub-博客搭建教程
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2026/05/01/test_latex/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">test latex</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/control/">control</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/robotics/">robotics</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E5%85%B7/">工具</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%96%87%E6%A1%A3/">文档</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%B5%8B%E8%AF%95/">测试</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80/">理论基础</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/control/" rel="tag">control</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ik/" rel="tag">ik</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/null-space/" rel="tag">null space</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%99%E7%A8%8B/" rel="tag">教程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E5%AD%A6/" rel="tag">数学</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%96%87%E6%A1%A3/" rel="tag">文档</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%8E%E4%BB%A3%E6%95%B0/" rel="tag">李代数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B5%8B%E8%AF%95/" rel="tag">测试</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag">笔记</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/control/" style="font-size: 20px;">control</a> <a href="/tags/ik/" style="font-size: 10px;">ik</a> <a href="/tags/null-space/" style="font-size: 10px;">null space</a> <a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 10px;">教程</a> <a href="/tags/%E6%95%B0%E5%AD%A6/" style="font-size: 10px;">数学</a> <a href="/tags/%E6%96%87%E6%A1%A3/" style="font-size: 10px;">文档</a> <a href="/tags/%E6%9D%8E%E4%BB%A3%E6%95%B0/" style="font-size: 10px;">李代数</a> <a href="/tags/%E6%B5%8B%E8%AF%95/" style="font-size: 10px;">测试</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 20px;">笔记</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/06/">June 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/05/">May 2026</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/06/29/test/">test</a>
+          </li>
+        
+          <li>
+            <a href="/2026/06/29/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2026/05/31/%E4%BD%8D%E7%BD%AE%E6%8E%A7%E5%88%B6%E4%B8%8E%E5%8A%9B%E6%8E%A7%E5%88%B6/">位置控制与力控制</a>
+          </li>
+        
+          <li>
+            <a href="/2026/05/30/%E9%9B%B6%E7%A9%BA%E9%97%B4%E6%8A%95%E5%BD%B1/">冗余机械臂零空间运动</a>
+          </li>
+        
+          <li>
+            <a href="/2026/05/17/OptimalControl(CMU16-745)/">Optimal Control(CMU 16-745) Notes</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
